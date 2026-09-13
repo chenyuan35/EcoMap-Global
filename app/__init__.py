@@ -1,0 +1,1 @@
+"""EcoMap Global application package."""
