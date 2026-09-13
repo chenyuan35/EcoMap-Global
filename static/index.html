@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoMap Global</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; background: #0b1220; color: #e5eefb; }
+    header { padding: 14px 18px; background: #111a2b; border-bottom: 1px solid #26344d; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    h1 { font-size: 20px; margin: 0; }
+    select { background: #172237; color: #fff; border: 1px solid #344663; border-radius: 8px; padding: 8px 10px; }
+    #meta { opacity: .75; font-size: 13px; }
+    #map { height: calc(100% - 64px); min-height: 520px; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #111a2b; color: #e5eefb; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EcoMap Global</h1>
+    <label>Metric:
+      <select id="metric">
+        <option value="">All</option>
+        <option value="temperature">Temperature</option>
+        <option value="pm25">PM2.5</option>
+      </select>
+    </label>
+    <span id="meta">Loading environmental observations…</span>
+  </header>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { worldCopyJump: true }).setView([20, 10], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const layer = L.layerGroup().addTo(map);
+    const metric = document.getElementById('metric');
+    const meta = document.getElementById('meta');
+
+    async function loadData() {
+      const q = metric.value ? `?metric=${encodeURIComponent(metric.value)}` : '';
+      const res = await fetch(`/api/v1/observations${q}`);
+      const data = await res.json();
+      layer.clearLayers();
+      data.items.forEach(item => {
+        const popup = `<strong>${item.city}, ${item.country}</strong><br>${item.metric}: ${item.value} ${item.unit}<br><small>source: ${item.source}</small>`;
+        L.circleMarker([item.latitude, item.longitude], {
+          radius: 8,
+          weight: 2,
+          fillOpacity: 0.7
+        }).bindPopup(popup).addTo(layer);
+      });
+      meta.textContent = `${data.count} observations · demo dataset`;
+    }
+
+    metric.addEventListener('change', loadData);
+    loadData().catch(err => { meta.textContent = `Failed to load data: ${err.message}`; });
+  </script>
+</body>
+</html>
