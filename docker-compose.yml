@@ -1,0 +1,14 @@
+services:
+  ecomap:
+    build: .
+    container_name: ecomap-global
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ECOMAP_DB_PATH: /app/data/ecomap.db
+    volumes:
+      - ecomap-data:/app/data
+
+volumes:
+  ecomap-data:
